@@ -1,14 +1,15 @@
+import 'dart:developer';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_chat/msg_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  runApp(ProviderScope(
-    child: const MyApp(),
+  runApp(const ProviderScope(
+    child: MyApp(),
   ));
 }
 
@@ -53,7 +54,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     driverCollection = FirebaseFirestore.instance
         .collection("chats")
         .doc("e10403da-ddf0-4784-b0a4-c6df850ae057")
-        .collection("driver");
+        .collection("chat");
   }
 
   _sendMessage() async {
@@ -95,17 +96,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         child: Column(
           children: [
             Expanded(
-              child: StreamBuilder(
+              child: StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
                       .collection("chats")
                       .doc("e10403da-ddf0-4784-b0a4-c6df850ae057")
-                      .collection("driver")
+                      .collection("chat")
+                      .orderBy("time", descending: true)
                       .snapshots(),
                   builder: ((context, snapshot) {
                     if (snapshot.hasData) {
-                      return Text(snapshot.data!.docs.first);
+                      return ListView.builder(
+                        itemCount: snapshot.data!.docs.length,
+                        itemBuilder: ((context, index) {
+                          log(snapshot.data!.docs[index]["message"]);
+                          log(index.toString());
+                          return Text(snapshot.data!.docs[index]["message"]);
+                        }),
+                      );
                     } else {
-                      return Center(child: CircularProgressIndicator());
+                      return const Center(child: CircularProgressIndicator());
                     }
                   })),
             ),
@@ -121,6 +130,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               child: TextField(
                 controller: _controller,
                 onSubmitted: (message) {
+                  _controller!.clear();
                   _sendMessage();
                 },
               ),
